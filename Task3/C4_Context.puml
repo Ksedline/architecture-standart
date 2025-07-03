@@ -1,0 +1,37 @@
+@startuml C4_Context.puml
+!include https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Context.puml
+
+Person(visitor, "Посетитель сайта")
+Person(client, "Клиент интернет-банка")
+Person_Ext(cc_agent, "Оператор кол-центра")
+Person(fo_dep, "Фронт-офис")
+Person(bo_dep, "Бэк-офис депозитов")
+Person(bo_cred, "Бэк-офис кредитов")
+
+System_Ext(sms_gateway, "СМС-шлюз", "Интеграция с телеком-оператором")
+System_Ext(telecom, "Телеком-оператор", "Внешний оператор СМС")
+System_Ext(partner_cc, "Партнёрский кол-центр", "Внешняя система кол-центра")
+
+System_Boundary(bank, "Банк «Стандарт»") {
+  System(internet_bank, "Интернет-банк", "ASP.NET MVC 4.5 / MS SQL")
+  System(site, "Сайт", "PHP + React")
+  System(cc, "Кол-центр", "React / Spring Boot / PostgreSQL")
+  System(abs, "Автоматизированная банковская система (АБС)", "Delphi + Oracle DB")
+}
+
+Rel(visitor, site, "Просмотр информации, подача заявки на депозит", "HTTPS")
+Rel(site, cc, "Передача заявки на депозит", "REST API")
+Rel(cc_agent, cc, "Обработка заявок, консультация клиентов")
+Rel(cc, abs, "Передача обращений, получение ставок", "REST/PLSQL")
+Rel_L(client, internet_bank, "Работа с продуктами, оформление депозита", "HTTPS")
+Rel_D(internet_bank, abs, "Получение ставок, оформление депозита", "PLSQL/DB Link")
+Rel(bo_dep, abs, "Обработка заявок, согласование ставок")
+Rel(bo_cred, abs, "Анализ кредитного риска")
+Rel(fo_dep, abs, "Работа с договорами, корректировка данных")
+Rel_L(abs, sms_gateway, "Отправка СМС-уведомлений", "HTTP API")
+Rel_L(cc, sms_gateway, "Оповещение клиента о статусе", "HTTP API")
+Rel_U(sms_gateway, client, "Получение кода подтверждения, статуса", "REST")
+Rel(sms_gateway, telecom, "Передача СМС", "SMPP/HTTP")
+Rel(cc, partner_cc, "Передача информации о ставках", "Файл/интеграция")
+
+@enduml

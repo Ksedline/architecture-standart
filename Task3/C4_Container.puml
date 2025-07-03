@@ -1,0 +1,55 @@
+@startuml C4_Container.puml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+title Банк «Стандарт» — Диаграмма контейнеров (депозиты)
+
+Person(visitor, "Посетитель сайта")
+Person(client,  "Клиент интернет-банка")
+Person(fo_dep,  "Фронт-офис")
+Person(bo_dep,  "Бэк-офис депозитов")
+Person(bo_cred,  "Бэк-офис кредитов")
+
+System_Boundary(bank, "Банк «Стандарт»") {
+  Container_Boundary(internet_bank, "Интернет-банк") {
+    Container(internet_bank_ui,   "Веб-интерфейс интернет-банка",     "ASP.NET MVC", "Личный кабинет, оформление депозитов")
+    Container(internet_bank_app,  "Сервер интернет-банка", "C# /.NET 4.5", "Бизнес-логика, интеграция с АБС и шлюзами")
+    ContainerDb(internet_bank_db, "БД интернет-банка",         "MS SQL")
+  }
+
+  Container_Boundary(abs, "Автоматизированная банковская система (АБС)") {
+    Container(abs_front,"Клиент АБС (рабочее место)",    "Delphi",      "Работа с договорами и клиентами")
+    Container(abs_dep,  "Модуль депозитов АБС", "PL/SQL",      "Учёт депозитов, ставки")
+    Container(abs_cred,   "Модуль кредитов АБС",   "PL/SQL",      "Кредитные продукты, анализ рисков")
+    ContainerDb(abs_db, "БД АБС",       "Oracle")
+  }
+
+  Container_Boundary(site, "Сайт") {
+    Container(site_fe,   "Frontend сайта",  "React",        "Публичные страницы, каталог депозитов")
+    Container(site_be,   "Backend сайта",   "PHP-FPM",      "REST API, обработка заявок")
+  }
+
+  Container(cc,   "Кол-центр",       "Spring Boot",  "Работа с обращениями, лиды, интеграция с АБС")
+  Container(partner_cc, "Партнёрский кол-центр", "Внешняя система", "Обработка обращений, консультации")
+  Container(sms_gateway, "СМС-шлюз", "Внутренний сервис", "Отправка СМС-уведомлений")
+  Container(telecom, "Телеком-оператор", "Внешний сервис", "Доставка СМС клиентам")
+}
+
+Rel(visitor, site_fe, "Просмотр депозитов, подача заявки", "HTTPS")
+Rel(client, internet_bank_ui, "Работа с личным кабинетом, оформление депозита", "HTTPS")
+Rel(bo_dep, abs_dep, "Обработка заявок, согласование ставок")
+Rel(bo_cred, abs_cred, "Анализ кредитного риска")
+Rel(fo_dep, abs_front, "Работа с договорами, корректировка данных")
+Rel(abs_dep, abs_db, "SQL — учёт депозитов")
+Rel(abs_cred, abs_db, "SQL — кредитные продукты")
+Rel(abs_front, abs_db, "SQL — операции фронт-офиса")
+Rel(internet_bank_ui, internet_bank_app, "Взаимодействие UI и бизнес-логики", "HTTPS")
+Rel(internet_bank_app, internet_bank_db, "Доступ к данным клиентов", "ADO.NET SQL")
+Rel(site_fe, site_be, "Запросы с фронта на бэкенд", "HTTPS REST")
+Rel(site_be, cc, "Передача заявки на депозит", "REST API")
+Rel(cc, abs_dep, "Передача обращений, получение ставок", "REST/PLSQL")
+Rel(internet_bank_app, abs_dep, "Получение ставок, оформление депозита", "PLSQL/DB Link")
+Rel(abs_dep, sms_gateway, "Отправка СМС-уведомлений", "HTTP API")
+Rel(cc, sms_gateway, "Оповещение клиента о статусе", "HTTP API")
+Rel(sms_gateway, telecom, "Передача СМС", "SMPP/HTTP")
+Rel(cc, partner_cc, "Передача информации о ставках", "Файл/интеграция")
+
+@enduml
