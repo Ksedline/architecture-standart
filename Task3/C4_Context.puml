@@ -8,37 +8,30 @@ Person(fo_dep, "Фронт-офис")
 Person(bo_dep, "Бэк-офис депозитов")
 Person(bo_cred, "Бэк-офис кредитов")
 
-System_Ext(sms, "SMS-Gateway", "HTTP API телеком-оператора")
+System_Ext(sms_gateway, "СМС-шлюз", "Интеграция с телеком-оператором")
+System_Ext(telecom, "Телеком-оператор", "Внешний оператор СМС")
+System_Ext(partner_cc, "Партнёрский кол-центр", "Внешняя система кол-центра")
 
 System_Boundary(bank, "Банк «Стандарт»") {
-  System(internet_bank, "Internet Bank", "ASP.NET MVC 4.5 / MS SQL")
-  System(site, "Public Web-Site", "PHP + React")
-  System_Ext(crm, "CRM Call-Centre", "React / Spring Boot / PostgreSQL")
-  System(deposit_api, "Deposit API Service", "REST /.NET 8")
-  System(abs, "ABS", "Delphi + Oracle DB")
+  System(internet_bank, "Интернет-банк", "ASP.NET MVC 4.5 / MS SQL")
+  System(site, "Сайт", "PHP + React")
+  System(cc, "Кол-центр", "React / Spring Boot / PostgreSQL")
+  System(abs, "Автоматизированная банковская система (АБС)", "Delphi + Oracle DB")
 }
 
-Rel(visitor, site, "Просмотр ставок, заявка (UC-1)", "HTTPS")
-Rel(site, crm, "Create Lead", "REST/HTTPS")
-Rel(cc_agent, crm, "Обработка лида / ставка")
-
-Rel(crm, deposit_api, "POST /lead → согласование", "REST")
-
-Rel_L(client, internet_bank, "Открыть депозит (UC-2)", "HTTPS")
-Rel_D(internet_bank, deposit_api, "Запрос ставки депозита")
-
-Rel(deposit_api, abs, "PL/SQL / DB Link")
-
-Rel_U(bo_dep, abs, "Подтверждение ставки")
-
-Rel_U(bo_cred, abs, "Предоставление кредитной истории")
-
-Rel_U(fo_dep, abs, "Внесение информации о договоре в систему / корректировка информации о клиенте (UC-3)")
-
-Rel_U(fo_dep, client, "Взаимодействие с клиентом")
-
-Rel_L(abs, sms, "Уведомление SMS", "HTTP")
-Rel_L(crm, sms, "Уведомление SMS", "HTTP")
-Rel_U(sms, client, "Направление кода подтверждения", "REST")
+Rel(visitor, site, "Просмотр информации, подача заявки на депозит", "HTTPS")
+Rel(site, cc, "Передача заявки на депозит", "REST API")
+Rel(cc_agent, cc, "Обработка заявок, консультация клиентов")
+Rel(cc, abs, "Передача обращений, получение ставок", "REST/PLSQL")
+Rel_L(client, internet_bank, "Работа с продуктами, оформление депозита", "HTTPS")
+Rel_D(internet_bank, abs, "Получение ставок, оформление депозита", "PLSQL/DB Link")
+Rel(bo_dep, abs, "Обработка заявок, согласование ставок")
+Rel(bo_cred, abs, "Анализ кредитного риска")
+Rel(fo_dep, abs, "Работа с договорами, корректировка данных")
+Rel_L(abs, sms_gateway, "Отправка СМС-уведомлений", "HTTP API")
+Rel_L(cc, sms_gateway, "Оповещение клиента о статусе", "HTTP API")
+Rel_U(sms_gateway, client, "Получение кода подтверждения, статуса", "REST")
+Rel(sms_gateway, telecom, "Передача СМС", "SMPP/HTTP")
+Rel(cc, partner_cc, "Передача информации о ставках", "Файл/интеграция")
 
 @enduml
