@@ -1,0 +1,61 @@
+@startuml C4_Container.puml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+title Internet-Bank & Deposits – диаграмма контейнеров
+
+Person(visitor, "Посетитель сайта")
+Person(client,  "Клиент интернет-банка")
+Person(fo_dep,  "Фронт-офис")
+Person(bo_dep,  "Бэк-офис депозитов")
+Person(bo_cred,  "Бэк-офис кредитов")
+
+System_Boundary(bank, "Банк «Стандарт»") {
+  Container_Boundary(internet_bank, "Internet Bank") {
+    Container(internet_bank_ui,   "Internet Bank Web UI",     "ASP.NET MVC", "Личный кабинет клиента")
+    Container(internet_bank_app,  "Internet Bank App Server", "C# /.NET 4.5", "Бизнес-логика Internet Bank")
+    ContainerDb(internet_bank_db, "Internet Bank DB",         "MS SQL")
+  }
+
+  Container_Boundary(abs, "ABS") {
+    Container(abs_front,"ABS Front",    "Delphi",      "Рабочее место фронт-офиса")
+    Container(abs_dep,  "Deposits Srv", "PL/SQL",      "Учёт депозитов, ставки")
+    Container(abs_cr,   "Credit Srv",   "PL/SQL",      "Кредитный риск")
+    ContainerDb(abs_db, "ABS DB",       "Oracle")
+  }
+
+  Container_Boundary(site, "Site") {
+    Container(site_fe,   "Site Frontend",  "React",        "Public pages")
+    Container(site_be,   "Site Backend",   "PHP-FPM",      "REST / Lead API")
+  }
+
+  Container_Ext(crm_api,   "CRM Core",       "Spring Boot",  "Leads, Operators")
+  Container(deposit_api, "Deposit API",      ".NET 8 Web API", "Анти-слой между каналами и ABS")
+}
+
+System_Ext(sms, "SMS-Gateway", "Отправка SMS")
+
+Rel(visitor, site_fe, "Просмотр ставок, заявка (UC-1)", "HTTPS")
+Rel(client, internet_bank_ui, "Просмотр ставок, заявка (UC-1)", "HTTPS")
+
+Rel_U(bo_dep, abs_dep, "Подтверждение ставки")
+Rel_U(bo_cred, abs_cr, "Предоставление кредитной истории")
+Rel_U(fo_dep, abs_front, "Внесение информации о договоре в систему / корректировка информации о клиенте (UC-3)")
+
+Rel_U(abs_dep, abs_db, "SQL")
+Rel_U(abs_cr, abs_db, "SQL")
+Rel_U(abs_front, abs_db, "SQL")
+
+Rel(internet_bank_ui, internet_bank_app, "HTTPS")
+Rel(internet_bank_app, internet_bank_db, "ADO.NET SQL")
+
+Rel(site_fe, site_be, "HTTPS REST")
+Rel(site_be, deposit_api, "POST /lead")
+
+Rel(crm_api, deposit_api, "POST /lead")
+
+Rel(internet_bank_app, deposit_api, "POST /requests, GET /status")
+
+Rel(deposit_api, abs_dep, "PL/SQL call / DB Link")
+Rel(deposit_api, sms, "HTTP JSON")
+Rel(abs_dep, sms, "HTTP JSON (status)")
+
+@enduml
