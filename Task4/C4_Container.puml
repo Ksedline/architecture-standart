@@ -1,0 +1,30 @@
+@startuml C4_Container.puml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Банк «Стандарт» — Диаграмма контейнеров (передача ставок)
+
+Container(rate_service, "Rate Service", "Java", "Публикует событие RateChanged")
+
+Container_Boundary(rate_distribution, "Сервис передачи ставок (Spring Boot)") {
+    Container(listener, "AMQP Listener", "Java", "Слушает RabbitMQ событие RateChanged")
+    Container(rest_push, "REST Push Adapter", "Java", "PUT /rates во внутренний кол-центр, retry")
+    Container(csv_gen, "CSV Generator", "Java", "Формирует CSV-файл ставок")
+    Container(sftp_up, "SFTP Uploader", "Java", "Загружает CSV на SFTP партнёра")
+    ContainerDb(audit_db, "Audit DB", "MS SQL", "Журналирует все попытки доставки")
+}
+
+Container(cc_platform, "Кол-центр", "Java", "Принимает ставки по REST, обновляет справочник ставок")
+Container_Ext(partner_sftp, "SFTP-сервер партнёрского кол-центра", "OpenSSH SFTP", "Принимает CSV-файл ставок")
+Container_Ext(partner_cc, "Партнёрский кол-центр", "Внешняя система", "Читает ставки из CSV")
+
+Rel(rate_service, listener, "AMQP (topic rates.v1)")
+Rel(listener, rest_push, "queue: событие RateChanged")
+Rel(listener, csv_gen, "queue: событие RateChanged")
+Rel(rest_push, cc_platform, "HTTPS PUT /rates")
+Rel(csv_gen, sftp_up, "CSV-файл ставок")
+Rel(sftp_up, partner_sftp, "SFTP (SSH v2)")
+Rel(rest_push, audit_db, "insert status")
+Rel(sftp_up, audit_db, "insert status")
+Rel(partner_sftp, partner_cc, "Чтение и парсинг файла ставок")
+
+@enduml

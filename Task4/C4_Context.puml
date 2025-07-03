@@ -1,0 +1,24 @@
+@startuml C4_Context.puml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+LAYOUT_WITH_LEGEND()
+
+Person(bo_dep, "Бэк-офис депозитов")
+Person(cc_operator, "Оператор кол-центра")
+Person(partner_cc_operator, "Оператор партнёрского кол-центра")
+
+System_Ext(abs, "Автоматизированная банковская система (АБС)")
+System(rate_service, "Rate Service")
+System(rate_distribution, "Сервис передачи ставок")
+System(cc_platform, "Кол-центр")
+System_Ext(partner_sftp, "SFTP-сервер партнёрского кол-центра")
+System_Ext(partner_cc, "Партнёрский кол-центр")
+
+Rel(bo_dep, abs, "Изменяет/подтверждает ставку")
+Rel(abs, rate_service, "DB-notify: событие об изменении ставки")
+Rel(rate_service, rate_distribution, "Событие RateChanged (RabbitMQ)")
+Rel(rate_distribution, cc_platform, "REST PUT /rates (JSON)")
+Rel(rate_distribution, partner_sftp, "Выгрузка CSV-файла со ставками")
+Rel(partner_sftp, partner_cc, "Чтение и парсинг файла ставок")
+Rel(cc_operator, cc_platform, "Работа с актуальными ставками (GUI)")
+Rel(partner_cc_operator, partner_cc, "Работа с актуальными ставками (GUI)")
+@enduml
